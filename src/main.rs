@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use std::io::{self, Write};
 
+use mmas::MMASParameters;
 use tsplib::TspLibInstance;
 
 mod mmas;
@@ -34,8 +35,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path =
         utils::get_intances_dir().join(instances.get(choice - 1).ok_or("Index is not in range")?);
     let mut tsp_lib_instance = TspLibInstance::new(path);
-    tsp_lib_instance.load()?;
-    println!("{:#?}", tsp_lib_instance);
+    tsp_lib_instance.load_data_from_file()?;
+    // Load MMAS parameters
+    let mmas_parameters = MMASParameters {
+        rho: 0.98,
+        // place an ant per node
+        colony_size: tsp_lib_instance.dimension(),
+        alpha: 1.0,
+        beta: 2.0,
+        p_best: 0.05,
+        nn_list_size: 15,
+    };
     // Compute instance solution using MMAS
+    tsp_lib_instance.initialize_nn_matrix(mmas_parameters.nn_list_size);
+    // Debug information
+    println!("{:#?}", tsp_lib_instance);
     Ok(())
 }
