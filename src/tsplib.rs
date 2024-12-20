@@ -1,25 +1,24 @@
 use std::{
-    cmp::min,
     fs::File,
     io::{BufRead, BufReader},
     iter::Peekable,
     path::PathBuf,
 };
 
-#[derive(Debug, PartialEq)]
+use crate::common::matrix::Matrix;
+
+#[derive(PartialEq)]
 enum EdgeWeightType {
     Euc2d,
     Explicit,
 }
 
-#[derive(Debug)]
 pub struct TspLibInstance {
     path: PathBuf,
-    dimension: usize,
-    symmetric: bool,
     edge_weight_type: EdgeWeightType,
-    distance_matrix: Vec<f64>,
-    nn_matrix: Vec<Vec<usize>>,
+    pub dimension: usize,
+    pub symmetric: bool,
+    pub distance_matrix: Matrix<f64>,
 }
 
 impl TspLibInstance {
@@ -30,12 +29,7 @@ impl TspLibInstance {
             symmetric: true,
             edge_weight_type: EdgeWeightType::Euc2d,
             distance_matrix: Default::default(),
-            nn_matrix: Default::default(),
         }
-    }
-
-    pub fn dimension(&self) -> usize {
-        self.dimension
     }
 
     pub fn load_data_from_file(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -98,7 +92,7 @@ impl TspLibInstance {
             coords.push((parts[0], parts[1]));
         }
         self.distance_matrix
-            .resize(self.dimension * self.dimension, Default::default());
+            .resize((self.dimension, self.dimension), Default::default());
         (0..self.dimension).for_each(|i| {
             let (from_x, from_y) = coords[i];
             (0..self.dimension).for_each(|j| {
@@ -107,7 +101,7 @@ impl TspLibInstance {
                     let dx = to_x - from_x;
                     let dy = to_y - from_y;
                     let distance = (dx.powi(2) + dy.powi(2)).sqrt().round(); // !!!
-                    self.distance_matrix[i * self.dimension + j] = distance;
+                    self.distance_matrix[(i, j)] = distance;
                 }
             });
         });
@@ -129,39 +123,10 @@ impl TspLibInstance {
             let parts = line.split_whitespace();
             for dist_str in parts {
                 let distance: f64 = dist_str.parse().unwrap();
-                self.distance_matrix.push(distance);
+                self.distance_matrix.data_mut().push(distance);
             }
         }
-        assert!(self.distance_matrix.len() == self.dimension * self.dimension);
+        assert!(self.distance_matrix.data().len() == self.dimension * self.dimension);
         Ok(())
-    }
-
-    /// initializes nearest neighbor martix (per node)
-    pub fn initialize_nn_matrix(&mut self, mut nn_list_size: usize) {
-        self.nn_matrix.resize(self.dimension, Default::default());
-        nn_list_size = min(self.dimension - 1, nn_list_size);
-        for node in 0..self.dimension {
-            let mut nn_list: Vec<usize> = (0..self.dimension).collect();
-            nn_list.sort_by(|&a, &b| {
-                self.get_distance(node, a)
-                    .partial_cmp(&self.get_distance(node, b))
-                    .unwrap()
-            });
-            assert!(self.get_distance(node, nn_list[0]) <= self.get_distance(node, nn_list[1]));
-            let nn_bounded_list = &mut self.nn_matrix[node];
-            nn_bounded_list.clear();
-            nn_bounded_list.reserve(nn_list_size);
-            nn_bounded_list.extend(
-                nn_list
-                    .iter()
-                    .filter(|&&x| x != node)
-                    .take(nn_list_size)
-                    .cloned(),
-            );
-        }
-    }
-
-    fn get_distance(&self, from: usize, to: usize) -> f64 {
-        self.distance_matrix[from * self.dimension + to]
     }
 }
