@@ -1,5 +1,5 @@
 use std::io::{self, Write};
-use tsp::{common::storage, mmas::MMAS, mmas::MMASParameters, tsplib::TspLibInstance};
+use tsp::{common::storage, mmas::{MMASParameters, MMAS}, tsplib::TspLibInstance, TspSolver};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     storage::create_data_dir();
@@ -31,11 +31,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     instance.load_data_from_file()?;
     // Compute instance solutions
     {
-        let parameters = MMASParameters::new(0.98, instance.dimension, 1.0, 2.0, 0.05, 15);
+        let parameters = MMASParameters::new(0.98, instance.dimension(), 1.0, 2.0, 0.05, 15);
+        let m = parameters.colony_size();
         let mut mmas = MMAS::new(instance, parameters);
         mmas.initialize_nn_matrix();
+        match mmas.solve(|statistics| statistics.iteration().is_some_and(|it| it == 1000000 / m)) {
+            Ok(solution) => {
+                println!("Solution computed!");
+                println!("Cost: {}", solution.cost);
+                print!("Tour: ");
+                for node in solution.visited() {
+                    print!("{} → ", node);
+                }
+                print!("{}", solution.visited()[0]);
+                println!();
+            }
+            Err(err) => return Err(err),
+        }
     }
-    // tsp_lib_instance.initialize_nn_matrix(mmas_parameters.nn_bounded_list_size);
-    // Debug information
     Ok(())
 }

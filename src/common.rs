@@ -1,6 +1,7 @@
 pub mod matrix {
     use std::ops::{Index, IndexMut};
 
+    #[derive(Clone)]
     pub struct Matrix<T> {
         data: Vec<T>,
         cols: usize,
@@ -14,6 +15,10 @@ pub mod matrix {
             }
         }
 
+        pub fn cols(&self) -> usize {
+            self.cols
+        }
+
         pub fn data(&self) -> &Vec<T> {
             &self.data
         }
@@ -25,6 +30,10 @@ pub mod matrix {
         pub fn resize(&mut self, dimension: (usize, usize), default_value: T) {
             self.data.resize(dimension.0 * dimension.1, default_value);
             self.cols = dimension.1;
+        }
+
+        pub fn row(&self, index: usize) -> &[T] {
+            &self.data[index * self.cols..self.cols]
         }
     }
 
@@ -50,6 +59,22 @@ pub mod matrix {
             let (row, col) = index;
             &mut self.data[row * self.cols + col]
         }
+    }
+}
+
+pub mod probability {
+    use rand::distributions::{Distribution, Uniform};
+
+    pub fn get_random_usize(min: usize, max_inclusive: usize) -> usize {
+        let mut rng = rand::thread_rng();
+        let distribution = Uniform::new_inclusive(min, max_inclusive);
+        distribution.sample(&mut rng)
+    }
+
+    pub fn get_random_f64(min: f64, max_exclusive: f64) -> f64 {
+        let mut rng = rand::thread_rng();
+        let distribution = Uniform::new(min, max_exclusive);
+        distribution.sample(&mut rng)
     }
 }
 

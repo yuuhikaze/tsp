@@ -16,8 +16,8 @@ enum EdgeWeightType {
 pub struct TspLibInstance {
     path: PathBuf,
     edge_weight_type: EdgeWeightType,
-    pub dimension: usize,
-    pub symmetric: bool,
+    dimension: usize,
+    symmetric: bool,
     pub distance_matrix: Matrix<f64>,
 }
 
@@ -30,6 +30,14 @@ impl TspLibInstance {
             edge_weight_type: EdgeWeightType::Euc2d,
             distance_matrix: Default::default(),
         }
+    }
+
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+
+    pub fn symmetric(&self) -> bool {
+        self.symmetric
     }
 
     pub fn load_data_from_file(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -128,5 +136,17 @@ impl TspLibInstance {
         }
         assert!(self.distance_matrix.data().len() == self.dimension * self.dimension);
         Ok(())
+    }
+
+    pub fn calculate_route_length(&self, route: &[usize]) -> f64 {
+        let mut distance = 0.0;
+        if !route.is_empty() {
+            let mut previous_node = route[route.len() - 1];
+            for &node in route {
+                distance += self.distance_matrix[(previous_node, node)];
+                previous_node = node;
+            }
+        }
+        distance
     }
 }

@@ -5,7 +5,7 @@ Visualize TSP/ATSP exact, metaheuristic solutions
 ### Features
 
 -   Current supported algorithms
-    -   MMAS (MAX-MIN Ant System) [TODO]
+    -   MMAS (MAX-MIN Ant System)
     -   Brute force [TODO]
     -   Physarum polycephalum [TODO]
 -   Load TSP/ATSP TSPLIB instances (`EUC_2D`, `EXPLICIT`)
