@@ -1,7 +1,6 @@
 pub mod matrix {
     use std::ops::{Index, IndexMut};
 
-    #[derive(Clone)]
     pub struct Matrix<T> {
         data: Vec<T>,
         cols: usize,
@@ -11,6 +10,13 @@ pub mod matrix {
         pub fn new(dimension: (usize, usize), default_value: T) -> Self {
             Matrix {
                 data: vec![default_value; dimension.0 * dimension.1],
+                cols: dimension.1,
+            }
+        }
+
+        pub fn with_capacity(dimension: (usize, usize)) -> Self {
+            Matrix {
+                data: Vec::with_capacity(dimension.0 * dimension.1),
                 cols: dimension.1,
             }
         }
@@ -33,7 +39,7 @@ pub mod matrix {
         }
 
         pub fn row(&self, index: usize) -> &[T] {
-            &self.data[index * self.cols..self.cols]
+            &self.data[index * self.cols..index * self.cols + self.cols]
         }
     }
 

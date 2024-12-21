@@ -144,9 +144,9 @@ impl MMAS {
         ant: &mut Ant,
         heuristic_information: &Matrix<f64>,
         pheromone_nw: &PheromoneNetwork,
-    ) {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let current_node = ant.visited()[ant.visited().len() - 1];
-        let mut nn_unvisited_row = Vec::with_capacity(self.parameters.nn_bounded_length);
+        let mut nn_unvisited_row = vec![Default::default(); self.parameters.nn_bounded_length];
         let mut added_unvisited_nn = 0;
         for &node in self.nn.row(current_node) {
             if !ant.is_visited(node) {
@@ -156,17 +156,18 @@ impl MMAS {
         }
         let mut chosen_node = current_node;
         if added_unvisited_nn > 0 {
-            let mut normalization_factor = Vec::with_capacity(self.parameters.nn_bounded_length);
+            let mut normalization_factor =
+                vec![Default::default(); self.parameters.nn_bounded_length];
             let mut total = 0.0;
             for i in 0..added_unvisited_nn {
                 let node = nn_unvisited_row[i];
-                let product = pheromone_nw.pheromone_matrix[(current_node, node)]
+                let product = pheromone_nw.pheromone_matrix()?[(current_node, node)]
                     * heuristic_information[(current_node, node)];
                 total += product;
                 normalization_factor[i] = total;
             }
             chosen_node = nn_unvisited_row[added_unvisited_nn - 1];
-            let r = get_random_f64(0.0, 1.0);
+            let r = get_random_f64(0.0, 1.0) * total;
             for i in 0..added_unvisited_nn {
                 if r < normalization_factor[i] {
                     chosen_node = nn_unvisited_row[i];
@@ -177,7 +178,7 @@ impl MMAS {
             let mut max_product = 0.0;
             for node in 0..self.instance.dimension() {
                 if !ant.is_visited(node) {
-                    let product = pheromone_nw.pheromone_matrix[(current_node, node)]
+                    let product = pheromone_nw.pheromone_matrix()?[(current_node, node)]
                         * heuristic_information[(current_node, node)];
                     if product > max_product {
                         max_product = product;
@@ -188,6 +189,7 @@ impl MMAS {
         }
         assert!(chosen_node != current_node);
         ant.visit(chosen_node);
+        Ok(())
     }
 }
 
@@ -202,20 +204,21 @@ impl TspSolver for MMAS {
         let heuristic_cost = self
             .instance
             .calculate_route_length(heuristic_solution.visited());
-        let mut pheromone_nw =
-            PheromoneNetwork::new((self.instance.dimension(), self.instance.dimension()));
-        pheromone_nw.set_tau_max(self.parameters.rho, heuristic_cost);
-        pheromone_nw.set_tau_min(self.parameters.p_best, self.instance.dimension())?;
-        let mut heuristic_information = Matrix::new(
-            (self.instance.dimension(), self.instance.dimension()),
-            Default::default(),
-        );
+        let mut pheromone_nw = PheromoneNetwork::default();
+        let tau_max = pheromone::compute_tau_max(self.parameters.rho, heuristic_cost);
+        let tau_min =
+            pheromone::compute_tau_min(tau_max, self.parameters.p_best, self.instance.dimension());
+        pheromone_nw.update_pheromone_bounds(tau_max, tau_min);
+        pheromone_nw
+            .initialize_pheromone_matrix((self.instance.dimension(), self.instance.dimension()))?;
+        let mut heuristic_information =
+            Matrix::with_capacity((self.instance.dimension(), self.instance.dimension()));
         for &distance in self.instance.distance_matrix.data() {
             heuristic_information
                 .data_mut()
                 .push(1.0 / f64::powf(distance, self.parameters.beta));
         }
-        let mut ants: Vec<Ant> = Vec::with_capacity(self.parameters.colony_size());
+        let mut ants: Vec<Ant> = vec![Ant::default(); self.parameters.colony_size()];
         let mut global_best = Ant::default();
         let mut iteration = 0;
         let mut statistics = Statistics::default();
@@ -225,7 +228,7 @@ impl TspSolver for MMAS {
                 let start_node = get_random_usize(0, self.instance.dimension() - 1);
                 ant.visit(start_node);
                 for _ in 1..self.instance.dimension() {
-                    self.move_ant(ant, &heuristic_information, &pheromone_nw);
+                    self.move_ant(ant, &heuristic_information, &pheromone_nw)?;
                 }
                 ant.cost = self.instance.calculate_route_length(ant.visited());
                 statistics.cost = Some(ant.cost);
@@ -236,16 +239,25 @@ impl TspSolver for MMAS {
                 if ant.cost < global_best.cost {
                     global_best = ant.clone();
                     new_global_best_found = true;
+                    println!(
+                        "Best solution found [{}] at iteration: {}",
+                        global_best.cost, iteration
+                    );
                 }
                 if ant.cost < iteration_best.cost {
                     iteration_best = ant;
                 }
             }
             if new_global_best_found {
-                pheromone_nw.set_tau_max(self.parameters.rho, global_best.cost);
-                pheromone_nw.set_tau_min(self.parameters.p_best, self.instance.dimension())?;
+                let tau_max = pheromone::compute_tau_max(self.parameters.rho, global_best.cost);
+                let tau_min = pheromone::compute_tau_min(
+                    tau_max,
+                    self.parameters.p_best,
+                    self.instance.dimension(),
+                );
+                pheromone_nw.update_pheromone_bounds(tau_max, tau_min);
             }
-            pheromone_nw.evaporate_from_all(self.parameters.rho);
+            pheromone_nw.evaporate_from_all(self.parameters.rho)?;
             let heuristic_cost = 1.0 / iteration_best.cost;
             let mut previous_node = iteration_best.visited()[iteration_best.visited().len() - 1];
             for &node in iteration_best.visited() {
@@ -254,10 +266,10 @@ impl TspSolver for MMAS {
                     node,
                     heuristic_cost,
                     self.instance.symmetric(),
-                );
+                )?;
                 previous_node = node;
             }
-            statistics.mime = Some(pheromone_nw.clone());
+            // statistics.meta_inf = ...
             statistics.iteration = Some(iteration);
             iteration += 1;
         }

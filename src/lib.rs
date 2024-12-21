@@ -8,15 +8,15 @@ pub struct Statistics<S> {
     /// Solution quality indicator
     cost: Option<f64>,
     /// Domain-specific construct
-    mime: Option<S>,
+    meta_inf: Option<S>,
 }
 
 impl<S> Statistics<S> {
-    pub fn new(iteration: Option<usize>, cost: Option<f64>, mime: Option<S>) -> Self {
+    pub fn new(iteration: Option<usize>, cost: Option<f64>, meta_inf: Option<S>) -> Self {
         Self {
             iteration,
             cost,
-            mime,
+            meta_inf,
         }
     }
 
@@ -29,7 +29,7 @@ impl<S> Statistics<S> {
     }
 
     pub fn mime(&self) -> Option<&S> {
-        self.mime.as_ref()
+        self.meta_inf.as_ref()
     }
 }
 
@@ -38,7 +38,7 @@ impl<S> Default for Statistics<S> {
         Self {
             iteration: Default::default(),
             cost: Default::default(),
-            mime: Default::default(),
+            meta_inf: Default::default(),
         }
     }
 }

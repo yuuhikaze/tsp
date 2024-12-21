@@ -22,7 +22,7 @@ impl Ant {
         self.visited.clear();
         self.visited.reserve(dimension);
         self.is_visited.clear();
-        self.is_visited.reserve(dimension);
+        self.is_visited.resize(dimension, Default::default());
     }
 
     pub fn visit(&mut self, node: usize) {

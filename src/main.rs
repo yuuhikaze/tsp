@@ -1,5 +1,10 @@
 use std::io::{self, Write};
-use tsp::{common::storage, mmas::{MMASParameters, MMAS}, tsplib::TspLibInstance, TspSolver};
+use tsp::{
+    TspSolver,
+    common::storage,
+    mmas::{MMAS, MMASParameters},
+    tsplib::TspLibInstance,
+};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     storage::create_data_dir();
@@ -35,7 +40,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let m = parameters.colony_size();
         let mut mmas = MMAS::new(instance, parameters);
         mmas.initialize_nn_matrix();
-        match mmas.solve(|statistics| statistics.iteration().is_some_and(|it| it == 1000000 / m)) {
+        // construct 100_000 solution per node
+        match mmas.solve(|statistics| statistics.iteration().is_some_and(|it| it == 100_000 / m)) {
             Ok(solution) => {
                 println!("Solution computed!");
                 println!("Cost: {}", solution.cost);
