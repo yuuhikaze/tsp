@@ -19,3 +19,9 @@ Visualize TSP/ATSP exact, metaheuristic solutions
 ### Requirements
 
 -   Up to date Rust nightly compiler
+
+### References
+
+-   Stützle, T., & Dorigo, M. (1999). ACO algorithms for the traveling salesman problem. Evolutionary algorithms in engineering and computer science, 4, 163-183. <http://staff.washington.edu/paymana/swarm/stutzle99-eaecs.pdf>
+-   Stützle, T., & Hoos, H. H. (2000). MAX-MIN Ant System. Future Generation Computer Systems, 16(8), 889-914. <https://doi.org/10.1016/S0167-739X(00)00043-1>
+-   RSkinderowicz. (2024). RSkinderowicz/MAX-MIN-Ant-System [C++]. <https://github.com/RSkinderowicz/MAX-MIN-Ant-System> (Obra original publicada en 2018)
