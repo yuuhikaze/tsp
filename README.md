@@ -20,6 +20,10 @@ Visualize TSP/ATSP exact, metaheuristic solutions
 
 -   Up to date Rust nightly compiler
 
+### More info
+
+-   Read more about this project here: <https://yuuhikaze.github.io/static/dmath.html>
+
 ### References
 
 -   Stützle, T., & Dorigo, M. (1999). ACO algorithms for the traveling salesman problem. Evolutionary algorithms in engineering and computer science, 4, 163-183. <http://staff.washington.edu/paymana/swarm/stutzle99-eaecs.pdf>
