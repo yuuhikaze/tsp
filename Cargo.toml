@@ -6,3 +6,8 @@ edition = "2024"
 [dependencies]
 directories = "5.0.1"
 rand = "0.8.5"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
